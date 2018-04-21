@@ -15,10 +15,30 @@ import org.json4s.jackson.JsonMethods._
 
 import scala.collection.mutable.ListBuffer
 
-object MyStockBot extends TelegramBot with Polling with InlineQueries with Commands {
+
+object MyStockBot extends AuthenticationBot with Polling with InlineQueries with Commands {
   implicit val formats = DefaultFormats
 
-  override def token: String = "564399150:AAESOLtP7aKK3G9BphDCwRtXHh-4es1x7Kc"
+  val important_shares = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[String]] ()
+
+//  case class Data(id: String,
+//                  secid: String,
+//                  shortname: String,
+//                  regnumber: String,
+//                  name: String,
+//                  isin: String,
+//                  is_traded: String,
+//                  emitend_id: String,
+//                  emitent_title: String,
+//                  emitent_inn: String,
+//                  emitent_okpo: String,
+//                  gosreg: String,
+//                  _type: String,
+//                  group: String,
+//                  primary_boardid: String,
+//                  marketprice_boardid: String)
+
+  //  override def token: String = "591662466:AAHemFCAxb4IoxWqitoBfEg8UIvNHpQzdzE"
 
   onCommand('start, 'help) { implicit msg =>
     reply(
@@ -27,6 +47,12 @@ object MyStockBot extends TelegramBot with Polling with InlineQueries with Comma
          |/start | /help - list commands
          |
          |/search args - provides info
+         |
+         |/login - Login
+         |/logout - Logout
+         |/list - Only authenticated users have access, shows the list of important shares
+         |/add - Only authenticated users have access, adds a share to the list of important shares
+         |/delete - Only authenticated users have access, adds a share to the list of important shares
          |
          |@Bot args - Inline mode
       """.stripMargin,
@@ -105,4 +131,66 @@ object MyStockBot extends TelegramBot with Polling with InlineQueries with Comma
     }
   }
 
+
+  onCommand('list) { implicit msg =>
+      authenticatedOrElse {
+        admin =>
+          reply(
+            s"""${admin.firstName}
+               |${important_shares(admin.id).mkString("\n")}
+             """.stripMargin)
+      } /* or else */ {
+        user =>
+          reply(s"${user.firstName}, you must /login first.")
+      }
+  }
+
+
+  onCommand('add) { implicit msg =>
+    authenticatedOrElse {
+      admin => {
+
+        withArgs { args =>
+          val shares = args.mkString(" ").split(" ")
+          if(shares.nonEmpty)
+          important_shares(admin.id) ++= shares
+        }
+
+        reply(
+          s"""${admin.firstName}
+             |${important_shares(admin.id).mkString("\n")}
+             """.stripMargin)
+      }
+    } /* or else */ {
+      user =>
+        reply(s"${user.firstName}, you must /login first.")
+    }
+  }
+
+
+  onCommand('delete) { implicit msg =>
+    authenticatedOrElse {
+      admin => {
+
+        withArgs { args =>
+          val shares = args.mkString(" ").split(" ")
+          if(shares.nonEmpty)
+            important_shares(admin.id) --= shares
+        }
+
+        reply(
+          s"""${admin.firstName}
+             |${important_shares(admin.id).mkString("\n")}
+             """.stripMargin)
+      }
+    } /* or else */ {
+      user =>
+        reply(s"${user.firstName}, you must /login first.")
+    }
+  }
+
+  def moexUrl(query: String): String =
+    Uri("https://iss.moex.com/iss/securities.json")
+      .withQuery(Query("q" -> query))
+      .toString()
 }
