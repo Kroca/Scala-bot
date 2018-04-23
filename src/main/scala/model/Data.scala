@@ -37,3 +37,12 @@ case class DataStock(boardid : String,
                      admittedvalue:String,
                      waval:String
                     )
+case class DataCandles(open: String,
+                       close: String,
+                       high: String,
+                       low: String,
+                       value: String,
+                       valume: String,
+                       begin: String,
+                       end: String
+                      )

@@ -9,7 +9,7 @@ import info.mukel.telegrambot4s.models.{Message, User}
 
 class AuthenticationBot() extends TelegramBot with Polling with Commands with SillyAuthentication {
 
-  override def token: String = "591662466:AAHemFCAxb4IoxWqitoBfEg8UIvNHpQzdzE"
+  override def token: String = "598435632:AAEkD_zpBTtOFLZtoN7lMM9uP3umArhZvnY"
 
 
   onCommand("/login") { implicit msg =>
