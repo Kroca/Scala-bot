@@ -1,0 +1,19 @@
+[0m[[0m[0minfo[0m] [0m[0mPackaging /Users/mergalievibragim/Desktop/Scala-bot/target/scala-2.12/myscalabot_2.12-0.1.jar ...[0m
+[0m[[0m[0mdebug[0m] [0m[0mInput file mappings:[0m
+[0m[[0m[0mdebug[0m] [0m[0m	MyStockBot$Data$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/mergalievibragim/Desktop/Scala-bot/target/scala-2.12/classes/MyStockBot$Data$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	Main.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/mergalievibragim/Desktop/Scala-bot/target/scala-2.12/classes/Main.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	Main$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/mergalievibragim/Desktop/Scala-bot/target/scala-2.12/classes/Main$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SillyAuthentication.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/mergalievibragim/Desktop/Scala-bot/target/scala-2.12/classes/SillyAuthentication.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	MyStockBot$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/mergalievibragim/Desktop/Scala-bot/target/scala-2.12/classes/MyStockBot$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	MyStockBot.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/mergalievibragim/Desktop/Scala-bot/target/scala-2.12/classes/MyStockBot.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	AuthenticationBot.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/mergalievibragim/Desktop/Scala-bot/target/scala-2.12/classes/AuthenticationBot.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	MyStockBot$Data.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/mergalievibragim/Desktop/Scala-bot/target/scala-2.12/classes/MyStockBot$Data.class[0m
+[0m[[0m[0minfo[0m] [0m[0mDone packaging.[0m
