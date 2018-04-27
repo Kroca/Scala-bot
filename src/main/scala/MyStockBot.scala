@@ -1,45 +1,34 @@
+import java.nio.file.{Files, Paths}
+import java.text.SimpleDateFormat
+
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import info.mukel.telegrambot4s.Implicits._
-import info.mukel.telegrambot4s.api._
-import info.mukel.telegrambot4s.api.declarative._
-import info.mukel.telegrambot4s.methods.ParseMode
-import model.{DataISIN, DataStock}
-import java.util.Date
+import info.mukel.telegrambot4s.api.{ChatActions, Polling, _}
+import info.mukel.telegrambot4s.api.declarative.{Commands, InlineQueries, _}
+import info.mukel.telegrambot4s.methods.{ParseMode, SendPhoto}
+import model.{DataCandles, DataISIN, DataStock}
+import java.util.{Date, Locale}
 import java.time.LocalDate
 
+import scalax.chart.api._
+import akka.util.ByteString
+import info.mukel.telegrambot4s.models.InputFile
+import org.jfree.chart.axis.DateAxis
+import org.jfree.data.time.TimeSeriesCollection
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
 import scala.collection.mutable.ListBuffer
+import scalax.chart.module.ChartFactories
 
 
-object MyStockBot extends AuthenticationBot with Polling with InlineQueries with Commands {
+object MyStockBot extends AuthenticationBot with Polling with InlineQueries with Commands with ChatActions {
   implicit val formats = DefaultFormats
 
   val important_shares = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[String]] ()
-
-
-//  case class Data(id: String,
-//                  secid: String,
-//                  shortname: String,
-//                  regnumber: String,
-//                  name: String,
-//                  isin: String,
-//                  is_traded: String,
-//                  emitend_id: String,
-//                  emitent_title: String,
-//                  emitent_inn: String,
-//                  emitent_okpo: String,
-//                  gosreg: String,
-//                  _type: String,
-//                  group: String,
-//                  primary_boardid: String,
-//                  marketprice_boardid: String)
-
-  //  override def token: String = "591662466:AAHemFCAxb4IoxWqitoBfEg8UIvNHpQzdzE"
 
   onCommand('start, 'help) { implicit msg =>
 
@@ -95,7 +84,7 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
             result += s.secid + " - " + s.shortname + "\n \n" +
               "Открытие: "+ s.open + "\n" +
               "Текущая цена: " + s.marketprice2 + " \n" +
-              "Изменение: "+f"$dif%1.2f"+ "\n"
+              "Изменение: "+f"$dif%1.2f"+ "% \n"
           }
         }
         if(result==""){
@@ -103,6 +92,69 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
         }else{
           reply(result)
         }
+
+      }
+    }
+  }
+  onCommand('candles) { implicit msg =>
+    withArgs { args =>
+      val query = args.mkString(" ")
+      val urlJson = Uri("https://iss.moex.com/iss/engines/stock/markets/shares/securities/" + query + "/candles.json")
+        .withQuery(Query("from" -> LocalDate.now.minusDays(7).toString))
+        .toString()
+      for {
+        responseJson <- Http().singleRequest(HttpRequest(uri = Uri(urlJson)))
+        if responseJson.status.isSuccess()
+        json <- Unmarshal(responseJson).to[String]
+      } /* do */ {
+
+        val objs = parse(json)
+        val input = objs \ "candles" \ "data"
+        if(input.isEmpty){
+          reply("Wrong query")
+        }
+        val data = input.extract[List[List[String]]]
+
+        var storage = new ListBuffer[DataCandles]()
+
+        for (d <- data) {
+          storage += DataCandles(d(0), d(1), d(2), d(3), d(4), d(5), d(6), d(7))
+        }
+
+
+        var min = storage(0).close.toFloat
+        var max = storage(0).close.toFloat
+
+//        val dataset = new TimeSeriesCollection()
+//        val series = new TimeSeries("Series")
+
+        val format = new SimpleDateFormat("yyyy-MM-dd")
+        var result = scala.collection.mutable.Map[Date, Float]()
+        for (s <- storage) {
+          result += ( (format.parse(s.end)) -> s.close.toFloat)
+          if (s.close.toFloat < min) {
+            min = s.close.toFloat
+          }
+          if (s.close.toFloat > max) {
+            max = s.close.toFloat
+          }
+        }
+
+
+        val chart = LineChart(result.toCategoryDataset())
+        chart.plot.getRangeAxis.setLowerBound(min)
+        chart.plot.getRangeAxis.setUpperBound(max)
+        chart.title = query
+        val axis = chart.plot.getDomainAxis.asInstanceOf[DateAxis]
+        axis.setDateFormatOverride(new SimpleDateFormat("dd-MMM-yyyy", new Locale("eu", "EU")))
+
+        chart.saveAsPNG("chart.png")
+
+        reply("done")
+
+        val photo = InputFile(Paths.get("chart.png"))
+        uploadingPhoto // Hint the user
+        request(SendPhoto(msg.source, photo))
 
       }
     }
@@ -206,11 +258,7 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
                  |${important_shares(admin.id).mkString("")}
              """.stripMargin)
           }
-
-
         }
-
-
       }
     }} /* or else */ {
       user =>
@@ -266,8 +314,6 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
                    |${important_shares(admin.id).mkString("")}
              """.stripMargin)
             }
-
-
           }
         }
       }
