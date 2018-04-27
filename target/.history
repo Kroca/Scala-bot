@@ -1,0 +1,6 @@
+;reload; set _root_.org.jetbrains.sbt.StructureKeys.sbtStructureOptions in Global := "download resolveClassifiers resolveSbtClassifiers" ;*/*:dumpStructureTo /private/var/folders/gm/tf79v5fn4nn04038k5yb1xy80000gn/T/sbt-structure.xml; session clear-all
+all {file:/Users/mergalievibragim/Desktop/Scala-bot/}scala-bot/products {file:/Users/mergalievibragim/Desktop/Scala-bot/}scala-bot/test:products
+run
+all {file:/Users/mergalievibragim/Desktop/Scala-bot/}scala-bot/products {file:/Users/mergalievibragim/Desktop/Scala-bot/}scala-bot/test:products
+run
+all {file:/Users/mergalievibragim/Desktop/Scala-bot/}scala-bot/products {file:/Users/mergalievibragim/Desktop/Scala-bot/}scala-bot/test:products

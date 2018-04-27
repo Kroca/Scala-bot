@@ -21,6 +21,7 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
 
   val important_shares = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[String]] ()
 
+
 //  case class Data(id: String,
 //                  secid: String,
 //                  shortname: String,
@@ -41,6 +42,14 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
   //  override def token: String = "591662466:AAHemFCAxb4IoxWqitoBfEg8UIvNHpQzdzE"
 
   onCommand('start, 'help) { implicit msg =>
+
+    for (user <- msg.from) {
+      login(user)
+      if (MyStockBot.important_shares.get(user.id).isEmpty) {
+        MyStockBot.important_shares(user.id) = scala.collection.mutable.Set()
+      }
+    }
+
     reply(
       s"""Moscow stock monitoring bot made by ALPHA TEAM.
          |
@@ -48,8 +57,6 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
          |
          |/search args - provides info
          |
-         |/login - Login
-         |/logout - Logout
          |/list - Only authenticated users have access, shows the list of important shares
          |/add - Only authenticated users have access, adds a share to the list of important shares
          |/delete - Only authenticated users have access, adds a share to the list of important shares
@@ -100,12 +107,17 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
       }
     }
   }
+
+
+
   onCommand('search) { implicit msg =>
     withArgs { args =>
       val query = args.mkString(" ")
       val url = Uri("https://iss.moex.com/iss/securities.json")
         .withQuery(Query("q" -> query))
         .toString()
+
+
       for {
         response <- Http().singleRequest(HttpRequest(uri = Uri(url)))
         if response.status.isSuccess()
@@ -117,19 +129,21 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
         val data = input.extract[List[List[String]]]
 
         var storage = new ListBuffer[DataISIN]()
-        for(d <-data){
-          storage+= DataISIN(d(0),d(1),d(2),d(3),d(4),d(5),d(6),d(7),d(8),d(9),d(10),d(11),d(12),d(13),d(14),d(15))
+        for (d <- data) {
+          storage += DataISIN(d(0), d(1), d(2), d(3), d(4), d(5), d(6), d(7), d(8), d(9), d(10), d(11), d(12), d(13), d(14), d(15))
         }
         var result = ""
-        for(s <- storage){
-          if(s.marketprice_boardid == "TQBR"){
+        for (s <- storage) {
+          if (s.marketprice_boardid == "TQBR") {
             result += s.secid + " - " + s.name + "\n"
           }
         }
+
         reply(result)
       }
     }
   }
+
 
 
   onCommand('list) { implicit msg =>
@@ -137,7 +151,7 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
         admin =>
           reply(
             s"""${admin.firstName}
-               |${important_shares(admin.id).mkString("\n")}
+               |${important_shares(admin.id).mkString("")}
              """.stripMargin)
       } /* or else */ {
         user =>
@@ -151,21 +165,59 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
       admin => {
 
         withArgs { args =>
-          val shares = args.mkString(" ").split(" ")
-          if(shares.nonEmpty)
-          important_shares(admin.id) ++= shares
+          val share = args.mkString(" ")
+
+          if(share.nonEmpty)
+            {
+          val query = share
+          val url = Uri("https://iss.moex.com/iss/securities.json")
+            .withQuery(Query("q" -> query))
+            .toString()
+
+
+          for {
+            response <- Http().singleRequest(HttpRequest(uri = Uri(url)))
+            if response.status.isSuccess()
+            json <- Unmarshal(response).to[String]
+          } /* do */ {
+
+            val objs = parse(json)
+            val input = objs \ "securities" \ "data"
+            val data = input.extract[List[List[String]]]
+
+            var storage = new ListBuffer[DataISIN]()
+            for (d <- data) {
+              storage += DataISIN(d(0), d(1), d(2), d(3), d(4), d(5), d(6), d(7), d(8), d(9), d(10), d(11), d(12), d(13), d(14), d(15))
+            }
+
+            var result = new ListBuffer[String]()
+            for (s <- storage) {
+              if (s.marketprice_boardid == "TQBR" && s.secid == share) {
+                result += s.secid + " - " + s.name + "\n"
+              }
+            }
+
+            if (result.size == 1) {
+              important_shares(admin.id) ++= result
+            }
+
+            reply(
+              s"""${admin.firstName}
+                 |${important_shares(admin.id).mkString("")}
+             """.stripMargin)
+          }
+
+
         }
 
-        reply(
-          s"""${admin.firstName}
-             |${important_shares(admin.id).mkString("\n")}
-             """.stripMargin)
+
       }
-    } /* or else */ {
+    }} /* or else */ {
       user =>
         reply(s"${user.firstName}, you must /login first.")
     }
   }
+
 
 
   onCommand('delete) { implicit msg =>
@@ -173,15 +225,51 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
       admin => {
 
         withArgs { args =>
-          val shares = args.mkString(" ").split(" ")
-          if(shares.nonEmpty)
-            important_shares(admin.id) --= shares
-        }
+          val share = args.mkString(" ")
 
-        reply(
-          s"""${admin.firstName}
-             |${important_shares(admin.id).mkString("\n")}
+          if(share.nonEmpty)
+          {
+            val query = share
+            val url = Uri("https://iss.moex.com/iss/securities.json")
+              .withQuery(Query("q" -> query))
+              .toString()
+
+
+            for {
+              response <- Http().singleRequest(HttpRequest(uri = Uri(url)))
+              if response.status.isSuccess()
+              json <- Unmarshal(response).to[String]
+            } /* do */ {
+
+              val objs = parse(json)
+              val input = objs \ "securities" \ "data"
+              val data = input.extract[List[List[String]]]
+
+              var storage = new ListBuffer[DataISIN]()
+              for (d <- data) {
+                storage += DataISIN(d(0), d(1), d(2), d(3), d(4), d(5), d(6), d(7), d(8), d(9), d(10), d(11), d(12), d(13), d(14), d(15))
+              }
+
+              var result = new ListBuffer[String]()
+              for (s <- storage) {
+                if (s.marketprice_boardid == "TQBR" && s.secid == share) {
+                  result += s.secid + " - " + s.name + "\n"
+                }
+              }
+
+              if (result.size == 1) {
+                important_shares(admin.id) --= result
+              }
+
+              reply(
+                s"""${admin.firstName}
+                   |${important_shares(admin.id).mkString("")}
              """.stripMargin)
+            }
+
+
+          }
+        }
       }
     } /* or else */ {
       user =>
