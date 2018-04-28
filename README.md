@@ -39,6 +39,7 @@ SBER - Сбербанк
 Изменение: -0,30%
 
 ###Contacts
+
 Telegram bot: @MISEX_stock_bot
 
 Admin: @almazmelnikov
