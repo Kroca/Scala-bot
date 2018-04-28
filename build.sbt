@@ -13,3 +13,5 @@ libraryDependencies ++= Seq(
   "com.itextpdf" % "itextpdf" % "5.5.6",
   "org.jfree" % "jfreesvg" % "3.0"
 )
+
+libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.5" % "test"
