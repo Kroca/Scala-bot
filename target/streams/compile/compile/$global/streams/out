@@ -1,6 +1,0 @@
-[0m[[0m[31merror[0m] [0m[0m/Users/mergalievibragim/Desktop/Scala-bot/src/main/scala/MyStockBot.scala:155:14: type mismatch;[0m
-[0m[[0m[31merror[0m] [0m[0m found   : Unit[0m
-[0m[[0m[31merror[0m] [0m[0m required: Boolean[0m
-[0m[[0m[31merror[0m] [0m[0m    response <- Http().singleRequest(HttpRequest(uri = Uri(url)))[0m
-[0m[[0m[31merror[0m] [0m[0m             ^[0m
-[0m[[0m[31merror[0m] [0m[0mone error found[0m

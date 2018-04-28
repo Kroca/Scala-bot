@@ -26,6 +26,7 @@ import scalax.chart.module.ChartFactories
 
 
 object MyStockBot extends AuthenticationBot with Polling with InlineQueries with Commands with ChatActions {
+
   implicit val formats = DefaultFormats
 
   val important_shares = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[String]] ()
