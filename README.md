@@ -18,21 +18,28 @@ Bot's available options:
 6. /delete {isin} - remove stock from favorites list.
 
 ### Examples:
+#### Search
 Request: /search Сбербанк
 Response:
 1. SBER - Сбербанк ОАО ао
 2. SBERP - Сбербанк ОАО ап
 
 This query returns list of 2 stocks.
-
+#### Info
 Request: /info SBER
 Response:
 ![alt text](https://github.com/Kroca/Scala-bot/blob/dev/example.png "Example")
-
 SBER - Сбербанк
  
 Открытие: 224.4
-Текущая цена: 223.73 
+
+Текущая цена: 223.73
+
 Изменение: -0,30%
+
+###Contacts
+Telegram bot: @MISEX_stock_bot
+
+Admin: @almazmelnikov
 
 Contact us, AlphaTeam.
