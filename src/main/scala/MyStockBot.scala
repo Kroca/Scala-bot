@@ -1,3 +1,4 @@
+import java.awt.Color
 import java.nio.file.{Files, Paths}
 import java.text.SimpleDateFormat
 
@@ -17,7 +18,7 @@ import scalax.chart.api._
 import akka.util.ByteString
 import info.mukel.telegrambot4s.models.InputFile
 import org.jfree.chart.axis.DateAxis
-import org.jfree.data.time.TimeSeriesCollection
+import org.jfree.data.time._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
@@ -90,6 +91,8 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
       }
     }
   }
+
+  implicit def jdate2jfree(d: Date): RegularTimePeriod = new Second(d)
   onCommand('candles) { implicit msg =>
     withArgs { args =>
       val query = args.mkString(" ")
@@ -119,13 +122,15 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
         var min = storage(0).close.toFloat
         var max = storage(0).close.toFloat
 
-//        val dataset = new TimeSeriesCollection()
-//        val series = new TimeSeries("Series")
+        //        val dataset = new TimeSeriesCollection()
+        //        val series = new TimeSeries("Series")
 
-        val format = new SimpleDateFormat("yyyy-MM-dd")
-        var result = scala.collection.mutable.Map[Date, Float]()
+        val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        var test = List[(Date, Float)]()
+
+        //        var result = scala.collection.mutable.Map[Date, Float]()
         for (s <- storage) {
-          result += ( (format.parse(s.end)) -> s.close.toFloat)
+          test = ((format.parse(s.end)) -> s.close.toFloat) :: test
           if (s.close.toFloat < min) {
             min = s.close.toFloat
           }
@@ -134,10 +139,14 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
           }
         }
 
-
-        val chart = LineChart(result.toCategoryDataset())
+        val seri = test.toTimeSeries("Price")
+        val chart = XYLineChart(seri)
         chart.plot.getRangeAxis.setLowerBound(min)
         chart.plot.getRangeAxis.setUpperBound(max)
+        chart.plot.setBackgroundPaint(Color.WHITE)
+        chart.plot.setDomainGridlinePaint(Color.black)
+        chart.plot.setRangeGridlinePaint(Color.black)
+        chart.plot.setBackgroundAlpha(0.5f)
         chart.title = query
         val axis = chart.plot.getDomainAxis.asInstanceOf[DateAxis]
         axis.setDateFormatOverride(new SimpleDateFormat("dd-MMM-yyyy", new Locale("eu", "EU")))
@@ -186,16 +195,16 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
 
 
   onCommand('list) { implicit msg =>
-      authenticatedOrElse {
-        admin =>
-          reply(
-            s"""${admin.firstName}
-               |${important_shares(admin.id).mkString("\n")}
+    authenticatedOrElse {
+      admin =>
+        reply(
+          s"""${admin.firstName}
+             |${important_shares(admin.id).mkString("\n")}
              """.stripMargin)
-      } /* or else */ {
-        user =>
-          reply(s"${user.firstName}, you must /login first.")
-      }
+    } /* or else */ {
+      user =>
+        reply(s"${user.firstName}, you must /login first.")
+    }
   }
 
 
@@ -206,7 +215,7 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
         withArgs { args =>
           val shares = args.mkString(" ").split(" ")
           if(shares.nonEmpty)
-          important_shares(admin.id) ++= shares
+            important_shares(admin.id) ++= shares
         }
 
         reply(
