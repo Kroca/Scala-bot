@@ -29,6 +29,7 @@ This query returns list of 2 stocks.
 Request: /info SBER
 Response:
 ![alt text](https://github.com/Kroca/Scala-bot/blob/dev/example.png "Example")
+
 SBER - Сбербанк
  
 Открытие: 224.4
