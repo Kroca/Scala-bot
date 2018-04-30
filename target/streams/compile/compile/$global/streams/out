@@ -1,0 +1,8 @@
+[0m[[0m[31merror[0m] [0m[0m/Users/daydzen/Scala-bot/src/main/scala/MyStockBot.scala:258:60: overloaded method value apply with alternatives:[0m
+[0m[[0m[31merror[0m] [0m[0m  (scheme: String,authority: akka.http.scaladsl.model.Uri.Authority,path: akka.http.scaladsl.model.Uri.Path,queryString: Option[String],fragment: Option[String])akka.http.scaladsl.model.Uri <and>[0m
+[0m[[0m[31merror[0m] [0m[0m  (input: akka.parboiled2.ParserInput)akka.http.scaladsl.model.Uri <and>[0m
+[0m[[0m[31merror[0m] [0m[0m  (input: String)akka.http.scaladsl.model.Uri[0m
+[0m[[0m[31merror[0m] [0m[0m cannot be applied to (akka.http.scaladsl.model.Uri)[0m
+[0m[[0m[31merror[0m] [0m[0m        response <- Http().singleRequest(HttpRequest(uri = Uri(url)))[0m
+[0m[[0m[31merror[0m] [0m[0m                                                           ^[0m
+[0m[[0m[31merror[0m] [0m[0mone error found[0m
