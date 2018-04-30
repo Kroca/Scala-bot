@@ -13,7 +13,7 @@ Bot's available options:
 1. /start - shows all available options.
 2. /search {key_word} - shows list of stocks, that have key_word in ISIN code, name or description of stock.
 3. /info {isin} - shows detailed information of stock.
-4. /list - shows list of favorite stocks.
+4. /list - shows list of favorite stocks and allow to get more information about them.
 5. /add {isin} - adds new stock to favorites list.
 6. /delete {isin} - remove stock from favorites list.
 

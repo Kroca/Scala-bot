@@ -9,14 +9,14 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import info.mukel.telegrambot4s.Implicits._
 import info.mukel.telegrambot4s.api.{ChatActions, Polling, _}
 import info.mukel.telegrambot4s.api.declarative.{Commands, InlineQueries, _}
-import info.mukel.telegrambot4s.methods.{ParseMode, SendPhoto}
+import info.mukel.telegrambot4s.methods.{ParseMode, SendMessage, SendPhoto}
 import model.{DataCandles, DataISIN, DataStock}
 import java.util.{Date, Locale}
 import java.time.LocalDate
 
 import scalax.chart.api._
 import akka.util.ByteString
-import info.mukel.telegrambot4s.models.InputFile
+import info.mukel.telegrambot4s.models.{ChatId, InlineKeyboardButton, InlineKeyboardMarkup, InputFile}
 import org.jfree.chart.axis.DateAxis
 import org.jfree.data.time.{RegularTimePeriod, Second, TimeSeriesCollection}
 import org.json4s._
@@ -26,11 +26,11 @@ import scala.collection.mutable.ListBuffer
 import scalax.chart.module.ChartFactories
 
 
-object MyStockBot extends AuthenticationBot with Polling with InlineQueries with Commands with ChatActions {
+object MyStockBot extends AuthenticationBot with Polling with InlineQueries with Commands with ChatActions with Callbacks {
 
   implicit val formats = DefaultFormats
 
-  val important_shares = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[String]] ()
+  val important_shares = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[String]]()
 
   onCommand('start, 'help) { implicit msg =>
 
@@ -62,7 +62,7 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
     withArgs { args =>
       val query = args.mkString(" ")
 
-      val url = Uri("https://iss.moex.com/iss/history/engines/stock/markets/shares/securities/"+query+".json")
+      val url = Uri("https://iss.moex.com/iss/history/engines/stock/markets/shares/securities/" + query + ".json")
         .withQuery(Query("from" -> LocalDate.now.toString))
         .toString()
       createGraph(query)
@@ -77,31 +77,32 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
         val data = input.extract[List[List[String]]]
 
         var storage = new ListBuffer[DataStock]()
-        for(d <-data){
-          storage+= DataStock(d(0),d(1),d(2),d(3),d(4),d(5),d(6),d(7),d(8),d(9),d(10),d(11),d(12),d(13),d(14),d(15),d(16),d(17),d(18),d(19))
+        for (d <- data) {
+          storage += DataStock(d(0), d(1), d(2), d(3), d(4), d(5), d(6), d(7), d(8), d(9), d(10), d(11), d(12), d(13), d(14), d(15), d(16), d(17), d(18), d(19))
         }
         var result = ""
-        for(s <- storage){
-          if(s.boardid == "TQBR"){
-            val dif = ((s.marketprice2.toFloat/s.open.toFloat -1 )*100)
+        for (s <- storage) {
+          if (s.boardid == "TQBR") {
+            val dif = ((s.marketprice2.toFloat / s.open.toFloat - 1) * 100)
             result += s.secid + " - " + s.shortname + "\n \n" +
-              "Открытие: "+ s.open + "\n" +
+              "Открытие: " + s.open + "\n" +
               "Текущая цена: " + s.marketprice2 + " \n" +
-              "Изменение: "+f"$dif%1.2f"+ "% \n"
+              "Изменение: " + f"$dif%1.2f" + "% \n"
           }
         }
-        if(result==""){
+        if (result == "") {
           result = "No info for today"
         }
         val photo = InputFile(Paths.get("chart.png"))
         uploadingPhoto // Hint the user
         msg.source
-        request(SendPhoto(msg.source, photo,result))
+        request(SendPhoto(msg.source, photo, result))
       }
     }
   }
+
   //create graph for last 7 days (Holidays are off days)
-  def createGraph(query:String): Unit ={
+  def createGraph(query: String): Unit = {
     val urlJson = Uri("https://iss.moex.com/iss/engines/stock/markets/shares/securities/" + query + "/candles.json")
       .withQuery(Query("from" -> LocalDate.now.minusDays(7).toString))
       .toString()
@@ -113,7 +114,7 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
 
       val objs = parse(json)
       val input = objs \ "candles" \ "data"
-      if(input.isEmpty){
+      if (input.isEmpty) {
         print("wrong input")
         return
       }
@@ -130,10 +131,10 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
       var max = storage(0).close.toFloat
 
       val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-      var test = List[(Date,Float)]()
+      var test = List[(Date, Float)]()
 
       for (s <- storage) {
-        test =  ( (format.parse(s.end)) -> s.close.toFloat) :: test
+        test = ((format.parse(s.end)) -> s.close.toFloat) :: test
         if (s.close.toFloat < min) {
           min = s.close.toFloat
         }
@@ -155,17 +156,16 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
       axis.setDateFormatOverride(new SimpleDateFormat("dd-MMM-yyyy", new Locale("eu", "EU")))
 
       chart.saveAsPNG("chart.png")
-  }
+    }
 
-  implicit def jdate2jfree(d: Date): RegularTimePeriod = new Second(d)
-  onCommand('candles) { implicit msg =>
-    withArgs { args =>
+    implicit def jdate2jfree(d: Date): RegularTimePeriod = new Second(d)
+
+    onCommand('candles) { implicit msg =>
+      withArgs { args =>
 
       }
     }
   }
-
-
 
 
   onCommand('search) { implicit msg =>
@@ -203,18 +203,68 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
   }
 
 
+  val TAG = "MORE_INFORMTAION"
 
   onCommand('list) { implicit msg =>
-      authenticatedOrElse {
-        admin =>
-          reply(
-            s"""${admin.firstName}
-               |${important_shares(admin.id).mkString("")}
-             """.stripMargin)
-      } /* or else */ {
-        user =>
-          reply(s"${user.firstName}, you must /start first.")
+    authenticatedOrElse {
+      admin =>
+        reply(
+          important_shares(admin.id).mkString("\n"),
+          replyMarkup = markupData()
+        )
+    } /* or else */ {
+      user =>
+        reply(s"${user.firstName}, you must /login first.")
+    }
+  }
+
+  def markupData() = {
+    InlineKeyboardMarkup.singleButton(
+      InlineKeyboardButton.callbackData(
+        s"Get more information",
+        tag("2")))
+  }
+
+  def tag = prefixTag(TAG) _
+
+  var importantCount = 0
+
+  onCallbackWithTag(TAG) { implicit cbq =>
+    ackCallback("Getting more information")
+    for (n <- 1 to importantCount by 1) {
+      val share = important_shares(cbq.from.id).mkString("").split("\n")(n - 1).split(" ")(0)
+      val url = Uri("https://iss.moex.com/iss/history/engines/stock/markets/shares/securities/" + share + ".json")
+        .withQuery(Query("from" -> LocalDate.now.minusDays(1).toString))
+        .toString()
+      print(url)
+      for {
+        data <- cbq.data
+        msg <- cbq.message
+        response <- Http().singleRequest(HttpRequest(uri = Uri(url)))
+        if response.status.isSuccess()
+        json <- Unmarshal(response).to[String]
+      } /* do */ {
+        val objs = parse(json)
+        val input = objs \ "history" \ "data"
+        val data = input.extract[List[List[String]]]
+
+        var storage = new ListBuffer[DataStock]()
+        for (d <- data) {
+          storage += DataStock(d(0), d(1), d(2), d(3), d(4), d(5), d(6), d(7), d(8), d(9), d(10), d(11), d(12), d(13), d(14), d(15), d(16), d(17), d(18), d(19))
+        }
+        var result = ""
+        for (s <- storage) {
+          if (s.boardid == "TQBR") {
+            val dif = ((s.marketprice2.toFloat / s.open.toFloat - 1) * 100)
+            result += s.secid + " - " + s.shortname + "\n \n" +
+              "Открытие: " + s.open + "\n" +
+              "Текущая цена: " + s.marketprice2 + " \n" +
+              "Изменение: " + f"$dif%1.2f" + "% \n"
+          }
+        }
+        request(SendMessage(ChatId(msg.source), result))
       }
+    }
   }
 
 
@@ -225,53 +275,53 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
         withArgs { args =>
           val share = args.mkString(" ")
 
-          if(share.nonEmpty)
-            {
-          val query = share
-          val url = Uri("https://iss.moex.com/iss/securities.json")
-            .withQuery(Query("q" -> query))
-            .toString()
+          if (share.nonEmpty) {
+            val query = share
+            val url = Uri("https://iss.moex.com/iss/securities.json")
+              .withQuery(Query("q" -> query))
+              .toString()
 
 
-          for {
-            response <- Http().singleRequest(HttpRequest(uri = Uri(url)))
-            if response.status.isSuccess()
-            json <- Unmarshal(response).to[String]
-          } /* do */ {
+            for {
+              response <- Http().singleRequest(HttpRequest(uri = Uri(url)))
+              if response.status.isSuccess()
+              json <- Unmarshal(response).to[String]
+            } /* do */ {
 
-            val objs = parse(json)
-            val input = objs \ "securities" \ "data"
-            val data = input.extract[List[List[String]]]
+              val objs = parse(json)
+              val input = objs \ "securities" \ "data"
+              val data = input.extract[List[List[String]]]
 
-            var storage = new ListBuffer[DataISIN]()
-            for (d <- data) {
-              storage += DataISIN(d(0), d(1), d(2), d(3), d(4), d(5), d(6), d(7), d(8), d(9), d(10), d(11), d(12), d(13), d(14), d(15))
-            }
-
-            var result = new ListBuffer[String]()
-            for (s <- storage) {
-              if (s.marketprice_boardid == "TQBR" && s.secid == share) {
-                result += s.secid + " - " + s.name + "\n"
+              var storage = new ListBuffer[DataISIN]()
+              for (d <- data) {
+                storage += DataISIN(d(0), d(1), d(2), d(3), d(4), d(5), d(6), d(7), d(8), d(9), d(10), d(11), d(12), d(13), d(14), d(15))
               }
-            }
 
-            if (result.size == 1) {
-              important_shares(admin.id) ++= result
-            }
+              var result = new ListBuffer[String]()
+              for (s <- storage) {
+                if (s.marketprice_boardid == "TQBR" && s.secid == share) {
+                  result += s.secid + " - " + s.name + "\n"
+                }
+              }
 
-            reply(
-              s"""${admin.firstName}
-                 |${important_shares(admin.id).mkString("")}
+              if (result.size == 1) {
+                important_shares(admin.id) ++= result
+                importantCount += 1
+              }
+
+              reply(
+                s"""${admin.firstName}
+                   |${important_shares(admin.id).mkString("")}
              """.stripMargin)
+            }
           }
         }
       }
-    }} /* or else */ {
+    } /* or else */ {
       user =>
         reply(s"${user.firstName}, you must /login first.")
     }
   }
-
 
 
   onCommand('delete) { implicit msg =>
@@ -281,8 +331,7 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
         withArgs { args =>
           val share = args.mkString(" ")
 
-          if(share.nonEmpty)
-          {
+          if (share.nonEmpty) {
             val query = share
             val url = Uri("https://iss.moex.com/iss/securities.json")
               .withQuery(Query("q" -> query))
@@ -313,6 +362,7 @@ object MyStockBot extends AuthenticationBot with Polling with InlineQueries with
 
               if (result.size == 1) {
                 important_shares(admin.id) --= result
+                importantCount = importantCount - 1
               }
 
               reply(
